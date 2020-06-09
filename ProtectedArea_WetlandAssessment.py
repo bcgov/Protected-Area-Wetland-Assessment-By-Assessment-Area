@@ -56,6 +56,8 @@ arcpy.CopyFeatures_management(AU, working_au)
 arcpy.MakeFeatureLayer_management(AU,"au_lyr")
 lyr_au = arcpy.mapping.Layer("au_lyr")
 
+
+
 #add fields to working wetland feature
 protected_Area = "AU_protected_area"
 arcpy.AddField_management(lyr_au, protected_Area, "DOUBLE")
@@ -77,11 +79,22 @@ desc = arcpy.Describe(lyr_au)
 geomField = desc.shapeFieldName
 areaFieldName = str(geomField) + "_Area"
 
-sumwetland_Area = 0
-sumprotected_Area = 0
-sumwetland_protected_Area = 0
+#get the areafield name to avoid geometry vs shape issue (Thanks you Carol Mahood)
+desc = arcpy.Describe(wetland_complex_input)
+#Get name to add FID query to
+wetland_name = desc.nameString
 
-num_done = 0
+#get the areafield name to avoid geometry vs shape issue (Thanks you Carol Mahood)
+desc = arcpy.Describe(protectedAreas)
+#Get name to add FID query to
+protected_name = desc.nameString
+
+#Create FID queries
+prot_FID = r"FID_" + protected_name
+wet_FID = r"FID_" + wetland_name
+
+
+
 #Make a Union feature to query for values
 working_union = output_gdb + r"\wet_au_Union_" + time
 arcpy.Union_analysis([lyr_au, wetland_complex_input, protectedAreas], working_union)
@@ -94,7 +107,13 @@ lyr_union = arcpy.mapping.Layer("union_lyr")
 desc = arcpy.Describe(lyr_union)
 geomField = desc.shapeFieldName
 union_areaFieldName = str(geomField) + "_Area"
-		
+
+
+
+sumwetland_Area = 0
+sumprotected_Area = 0
+sumwetland_protected_Area = 0
+num_done = 0
 #Iterate through AUs to clip protected area and wetlands
 with arcpy.da.UpdateCursor(lyr_au, [au_ID, protected_Area, wetland_Area, prot_wet_area, perc_prot, perc_Wetland, perc_AU_Wetland_prot, areaFieldName, perc_Wetland_prot]) as cursor:
 	for test in cursor:
@@ -108,7 +127,7 @@ with arcpy.da.UpdateCursor(lyr_au, [au_ID, protected_Area, wetland_Area, prot_we
 		
 		''' Protected in AU '''
 		# Def Query for given AU Protected Area
-		lyr_uniondefinitionQuery =
+		lyr_uniondefinitionQuery = au_ID + r" = " + str_test + "AND " + prot_FID + " <> -1"
 		 
 		#Iterate through each feature to get the total area
 		for test2 in cursor2:
@@ -118,7 +137,7 @@ with arcpy.da.UpdateCursor(lyr_au, [au_ID, protected_Area, wetland_Area, prot_we
 		''' Wetlands in  AU '''
 				
 		# Def Query for given AU Wetland Area
-		lyr_uniondefinitionQuery =
+		lyr_uniondefinitionQuery = au_ID + r" = " + str_test + "AND " + wet_FID + " <> -1"
 		
 		#Iterate through each feature to get the total area 
 		for test2 in cursor2:
@@ -130,7 +149,7 @@ with arcpy.da.UpdateCursor(lyr_au, [au_ID, protected_Area, wetland_Area, prot_we
 		''' Wetlands Protected '''
 				
 		# Def Query for given AU Protected Wetland Area
-		lyr_uniondefinitionQuery =
+		lyr_uniondefinitionQuery = au_ID + r" = " + str_test + "AND " + wet_FID + " <> -1" + "AND " + prot_FID + " <> -1"
 		
 		#Iterate through each feature to get the total area 
 		for test2 in cursor2:
