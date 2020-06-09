@@ -56,6 +56,13 @@ arcpy.CopyFeatures_management(AU, working_au)
 arcpy.MakeFeatureLayer_management(AU,"au_lyr")
 lyr_au = arcpy.mapping.Layer("au_lyr")
 
+#create wetland layer to query
+arcpy.MakeFeatureLayer_management(wetland_complex_input,"wet_lyr")
+lyr_wet = arcpy.mapping.Layer("wet_lyr")
+
+#create protected layer to query
+arcpy.MakeFeatureLayer_management(protectedAreas,"prot_lyr")
+lyr_prot = arcpy.mapping.Layer("prot_lyr")
 
 
 #add fields to working wetland feature
@@ -79,25 +86,27 @@ desc = arcpy.Describe(lyr_au)
 geomField = desc.shapeFieldName
 areaFieldName = str(geomField) + "_Area"
 
+'''
 #get the areafield name to avoid geometry vs shape issue (Thanks you Carol Mahood)
-desc = arcpy.Describe(wetland_complex_input)
+desc = arcpy.Describe(lyr_wet)
 #Get name to add FID query to
-wetland_name = desc.nameString
+wetland_name = desc.nameStringe
 
 #get the areafield name to avoid geometry vs shape issue (Thanks you Carol Mahood)
-desc = arcpy.Describe(protectedAreas)
+desc = arcpy.Describe(lyr_prot)
 #Get name to add FID query to
 protected_name = desc.nameString
+'''
 
 #Create FID queries
-prot_FID = r"FID_" + protected_name
-wet_FID = r"FID_" + wetland_name
+prot_FID = r"FID_" + wetland_name
+wet_FID = r"FID_" + protected_name
 
 
 
 #Make a Union feature to query for values
 working_union = output_gdb + r"\wet_au_Union_" + time
-arcpy.Union_analysis([lyr_au, wetland_complex_input, protectedAreas], working_union)
+arcpy.Union_analysis([lyr_au, lyr_prot, lyr_wet], working_union)
 
 #create Wetland layer to query
 arcpy.MakeFeatureLayer_management(working_union,"union_lyr")
@@ -160,8 +169,10 @@ with arcpy.da.UpdateCursor(lyr_au, [au_ID, protected_Area, wetland_Area, prot_we
 		test[4] = (test[1]/test[7])*100
 		test[5] = (test[2]/test[7])*100
 		test[6] = (test[3]/test[7])*100
-		test[8] = (test[3]/test[2])*100
-		
+		if test[2] > 0:
+			test[8] = (test[3]/test[2])*100
+		else:
+			test[8] = 0
 		cursor.updateRow(test)
 		
 		lyr_au.definitionQuery = ""
