@@ -127,35 +127,29 @@ with arcpy.da.UpdateCursor(lyr_au, [au_ID, protected_Area, wetland_Area, prot_we
 		
 		''' Protected in AU '''
 		# Def Query for given AU Protected Area
-		lyr_uniondefinitionQuery = au_ID + r" = " + str_test + "AND " + prot_FID + " <> -1"
+		lyr_union.definitionQuery = au_ID + r" = " + str_test + "AND " + prot_FID + " <> -1"
 		 
 		#Iterate through each feature to get the total area
 		for test2 in cursor2:
 			sumprotected_Area = test2.getValue(union_areaFieldName) + sumprotected_Area
 		'''  End   '''
 		
-		''' Wetlands in  AU '''
-				
+		''' Wetlands in  AU '''	
 		# Def Query for given AU Wetland Area
-		lyr_uniondefinitionQuery = au_ID + r" = " + str_test + "AND " + wet_FID + " <> -1"
+		lyr_union.definitionQuery = au_ID + r" = " + str_test + "AND " + wet_FID + " <> -1"
 		
 		#Iterate through each feature to get the total area 
 		for test2 in cursor2:
 			sumwetland_Area = test2.getValue(union_areaFieldName) + sumwetland_Area
-		
-		
 		''' End '''
 		
 		''' Wetlands Protected '''
-				
 		# Def Query for given AU Protected Wetland Area
-		lyr_uniondefinitionQuery = au_ID + r" = " + str_test + "AND " + wet_FID + " <> -1" + "AND " + prot_FID + " <> -1"
+		lyr_union.definitionQuery = au_ID + r" = " + str_test + "AND " + wet_FID + " <> -1" + "AND " + prot_FID + " <> -1"
 		
 		#Iterate through each feature to get the total area 
 		for test2 in cursor2:
-			sumwetland_protected_Area = test2.getValue(it_protectedWetland_AU_areaFieldName) + sumwetland_protected_Area
-		
-
+			sumwetland_protected_Area = test2.getValue(union_areaFieldName) + sumwetland_protected_Area
 		''' End '''
 
 		test[1] = sumprotected_Area
