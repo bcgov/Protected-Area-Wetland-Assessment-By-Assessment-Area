@@ -134,18 +134,22 @@ num_done = 0
 #Iterate through AUs to clip protected area and wetlands
 with arcpy.da.UpdateCursor(lyr_au, [au_ID, protected_Area, wetland_Area, prot_wet_area, perc_prot, perc_Wetland, perc_AU_Wetland_prot, areaFieldName, perc_Wetland_prot]) as cursor:
 	for test in cursor:
+		sumwetland_Area = 0
+		sumprotected_Area = 0
+		sumwetland_protected_Area = 0
+		
 		str_test = str(test[0])[:-2]
 		
 		#Make sure the Assessment unit is the only feature being red 
 		lyr_au.definitionQuery = au_ID + r" = " + str_test
 		
-		#create a cursor to look inside union
-		cursor2 = arcpy.SearchCursor(working_union)		
-		
+			
+		cursor2 = arcpy.SearchCursor(working_union)	
 		''' Protected in AU '''
 		# Def Query for given AU Protected Area
 		lyr_union.definitionQuery = au_ID + r" = " + str_test + "AND " + prot_FID + " <> -1"
-		 
+		
+			
 		#Iterate through each feature to get the total area
 		for test2 in cursor2:
 			sumprotected_Area = test2.getValue(union_areaFieldName) + sumprotected_Area
