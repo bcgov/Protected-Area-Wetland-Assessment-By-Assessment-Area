@@ -53,7 +53,7 @@ working_au = output_gdb + r"\au_" + time
 arcpy.CopyFeatures_management(AU, working_au)
 
 #create Assessment Unit layer to query
-arcpy.MakeFeatureLayer_management(AU,"au_lyr")
+arcpy.MakeFeatureLayer_management(working_au,"au_lyr")
 lyr_au = arcpy.mapping.Layer("au_lyr")
 
 #create wetland layer to query
@@ -90,19 +90,27 @@ areaFieldName = str(geomField) + "_Area"
 #get the areafield name to avoid geometry vs shape issue (Thanks you Carol Mahood)
 desc = arcpy.Describe(lyr_wet)
 #Get name to add FID query to
-wetland_name = desc.nameStringe
+wetland_name = desc.nameString
 
 #get the areafield name to avoid geometry vs shape issue (Thanks you Carol Mahood)
 desc = arcpy.Describe(lyr_prot)
 #Get name to add FID query to
 protected_name = desc.nameString
-'''
 
 #Create FID queries
-prot_FID = r"FID_" + wetland_name
-wet_FID = r"FID_" + protected_name
+prot_FID = r"FID_" + protected_name
+wet_FID = r"FID_" + wetland_name
+
+'''
 
 
+
+#Create FID queries
+prot_FID = r"FID_" + str(lyr_prot)
+wet_FID = r"FID_" + str(lyr_wet)
+
+print wet_FID
+print prot_FID
 
 #Make a Union feature to query for values
 working_union = output_gdb + r"\wet_au_Union_" + time
@@ -132,7 +140,7 @@ with arcpy.da.UpdateCursor(lyr_au, [au_ID, protected_Area, wetland_Area, prot_we
 		lyr_au.definitionQuery = au_ID + r" = " + str_test
 		
 		#create a cursor to look inside union
-		cursor2 = arcpy.SearchCursor(lyr_union)		
+		cursor2 = arcpy.SearchCursor(working_union)		
 		
 		''' Protected in AU '''
 		# Def Query for given AU Protected Area
