@@ -95,7 +95,6 @@ if desc.name[-4:] == ".shp":
 else:
 	protected_name = desc.name
 
-wetland_Area = "AU_wetland_area"
 
 #Create FID queries
 prot_FID = r"FID_" + protected_name
