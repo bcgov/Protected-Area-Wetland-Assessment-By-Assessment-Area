@@ -31,24 +31,24 @@ time = time.strftime("%y%m%d")
 
 
 #Input Wetland Complex dataset
-#wetland_complex_input = arcpy.GetParameterAsText(0)
-wetland_complex_input = r"V:\srm\smt\Workarea\ArcProj\P17_Skeena_ESI\Data\Values\Wetlands\BaseData\WetlandsBase.gdb\Wetlands_Restart_190911\ESI_basic_Wetland_Complexes_190912"
+wetland_complex_input = arcpy.GetParameterAsText(0)
+#wetland_complex_input = r"V:\srm\smt\Workarea\ArcProj\P17_Skeena_ESI\Data\Values\Wetlands\BaseData\WetlandsBase.gdb\Wetlands_Restart_190911\ESI_basic_Wetland_Complexes_190912"
 
 #Protecte Area input
-#protectedAreas = arcpy.GetParameterAsText(1)
-protectedAreas = r"V:\srm\smt\Workarea\ArcProj\P17_Skeena_ESI\Data\Values\Wetlands\T1.5\DesignatedLands\SSAF_FWAau_NoHarvest_2018_200408.shp"
+protectedAreas = arcpy.GetParameterAsText(1)
+#protectedAreas = r"V:\srm\smt\Workarea\ArcProj\P17_Skeena_ESI\Data\Values\Wetlands\T1.5\DesignatedLands\SSAF_FWAau_NoHarvest_2018_200408.shp"
 
 #Assessment Unit Input
-#AU = arcpy.GetParameterAsText(2
-AU = r"V:\srm\smt\Workarea\ArcProj\P17_Skeena_ESI\Data\ESI_Data.gdb\AU\SSAF_fwaAU_Watersheds"
+AU = arcpy.GetParameterAsText(2)
+#AU = r"V:\srm\smt\Workarea\ArcProj\P17_Skeena_ESI\Data\ESI_Data.gdb\AU\SSAF_fwaAU_Watersheds"
 
 #Save Location Folder
-#output_save = arcpy.GetParameterAsText(3)
-output_save = r"V:\srm\smt\Workarea\ArcProj\P17_Skeena_ESI\Data\Values\Wetlands\T1"
+output_save = arcpy.GetParameterAsText(3)
+#output_save = r"V:\srm\smt\Workarea\ArcProj\P17_Skeena_ESI\Data\Values\Wetlands\T1"
 
 #AU Unique ID Field
-#au_ID = arcpy.GetParameterAsText(4)
-au_ID = r"WATERSHED_FEATURE_ID"
+au_ID = arcpy.GetParameterAsText(4)
+#au_ID = r"WATERSHED_FEATURE_ID"
 
 #create geodatabase to work out of
 save_gdb = "Wet_Protected_" + time
@@ -112,14 +112,16 @@ areaFieldName = str(geomField) + "_Area"
 working_union = output_gdb + r"\wet_au_Union_" + time
 arcpy.Union_analysis([working_au, protectedAreas, wetland_complex_input], working_union)
 
+#get the areafield name to avoid geometry vs shape issue (Thanks you Carol Mahood)
+fc = working_union
+desc = arcpy.Describe(fc)
+geomField = desc.shapeFieldName
+union_areaFieldName = str(geomField) + "_Area"
+
 #create Wetland layer to query
 arcpy.MakeFeatureLayer_management(working_union,"union_lyr")
 lyr_union = arcpy.mapping.Layer("union_lyr")
 
-#get the areafield name to avoid geometry vs shape issue (Thanks you Carol Mahood)
-desc = arcpy.Describe(lyr_union)
-geomField = desc.shapeFieldName
-union_areaFieldName = str(geomField) + "_Area"
 
 #add fields to working wetland feature
 protected_Area = "AU_protected_area"
@@ -141,6 +143,12 @@ sumwetland_Area = 0
 sumprotected_Area = 0
 sumwetland_protected_Area = 0
 num_done = 0
+
+#figure out what the AU ID field type is
+fields = arcpy.ListFields(lyr_union, au_ID)
+for field in fields:
+	fieldType = field.type
+
 #Iterate through AUs to clip protected area and wetlands
 rows = arcpy.UpdateCursor(lyr_au)
 for row in rows:
@@ -149,11 +157,17 @@ for row in rows:
 	sumprotected_Area = 0
 	sumwetland_protected_Area = 0
 	wtrAU = row.getValue(au_ID)	
+	
+	#For codes that are numbers
 	str_test = str(wtrAU)[:-2]
-		
+	
+	
 	''' Protected in AU '''
-	# Def Query for given AU Protected Area
-	lyr_union.definitionQuery = au_ID + r" = " + str_test + " AND " + prot_FID + " <> -1"
+	# Def Query for given AU Protected Area - checking what field type is ID field
+	if fieldType in ["Double", "Single", "Integer", "SmallInteger"]:
+		lyr_union.definitionQuery = au_ID + r" = " + str_test + " AND " + prot_FID + " <> -1"
+	else:
+		lyr_union.definitionQuery = au_ID + r" = '" + wtrAU + "' AND " + prot_FID + " <> -1"
 	
 	with arcpy.da.UpdateCursor(lyr_union, [union_areaFieldName]) as cursor:		
 		#Iterate through each feature to get the total area
@@ -164,7 +178,12 @@ for row in rows:
 	''' Wetlands in  AU '''	
 	
 	# Def Query for given AU Wetland Area
-	lyr_union.definitionQuery = au_ID + r" = " + str_test + " AND " + wet_FID + " <> -1"
+	# Def Query for given AU Protected Area - checking what field type is ID field
+	if fieldType in ["Double", "Single", "Integer", "SmallInteger"]:
+		lyr_union.definitionQuery = au_ID + r" = " + str_test + " AND " + wet_FID + " <> -1"
+	else:
+		lyr_union.definitionQuery = au_ID + r" = '" + wtrAU + "' AND " + wet_FID + " <> -1"
+	
 	
 	#Iterate through each feature to get the total area 
 	with arcpy.da.UpdateCursor(lyr_union, [union_areaFieldName]) as cursor2:		
@@ -177,7 +196,11 @@ for row in rows:
 		
 	''' Wetlands Protected '''
 	# Def Query for given AU Protected Wetland Area
-	lyr_union.definitionQuery = au_ID + r" = " + str_test + " AND " + wet_FID + " <> -1" + " AND " + prot_FID + " <> -1"
+	if fieldType in ["Double", "Single", "Integer", "SmallInteger"]:
+		lyr_union.definitionQuery = au_ID + r" = " + str_test + " AND " + wet_FID + " <> -1" + " AND " + prot_FID + " <> -1"
+	else:
+		lyr_union.definitionQuery = au_ID + r" = '" + wtrAU + "' AND " + wet_FID + " <> -1" + " AND " + prot_FID + " <> -1"
+	
 	#Iterate through each feature to get the total area 
 	with arcpy.da.UpdateCursor(lyr_union, [union_areaFieldName]) as cursor3:		
 		#Iterate through each feature to get the total area
