@@ -1,4 +1,5 @@
 # Protected-Area-Wetland-Assessment-By-Assessment-Area
+[![img](https://img.shields.io/badge/Lifecycle-Stable-97ca00)](https://github.com/bcgov/repomountie/blob/master/doc/lifecycle-badges.md)
 Tool to look at the amount Wetland, Protected Area, and Wetland Protected in an Assessment Unit (user provided)
 
 Features Usage Requirements Installation Project Status Goals/Roadmap Getting Help or Reporting an Issue How to Contribute Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
